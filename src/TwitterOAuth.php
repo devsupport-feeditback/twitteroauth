@@ -233,6 +233,19 @@ class TwitterOAuth extends Config
     }
 
     /**
+     * Get the image from a DM request
+     *
+     * @param string $url The protected url of the image
+     * @param array  $parameters request params
+     *
+     * @return string
+     */
+    public function getImage(string $url, array $parameters = [])
+    {
+        return $this->makeRequests($url, 'GET', $parameters, false);
+    }
+
+    /**
      * Make POST requests to the API.
      *
      * @param string $path
@@ -464,7 +477,13 @@ class TwitterOAuth extends Config
         if (!$json) {
             $parameters = $this->cleanUpParameters($parameters);
         }
-        return $this->makeRequests($url, $method, $parameters, $json);
+
+        $result = $this->makeRequests($url, $method, $parameters, $json);
+
+        $response = JsonDecoder::decode($result, $this->decodeJsonAsArray);
+        $this->response->setBody($response);
+
+        return $response;
     }
 
     /**
@@ -488,13 +507,11 @@ class TwitterOAuth extends Config
         do {
             $this->sleepIfNeeded();
             $result = $this->oAuthRequest($url, $method, $parameters, $json);
-            $response = JsonDecoder::decode($result, $this->decodeJsonAsArray);
-            $this->response->setBody($response);
             $this->attempts++;
             // Retry up to our $maxRetries number if we get errors greater than 500 (over capacity etc)
         } while ($this->requestsAvailable());
 
-        return $response;
+        return $result;
     }
 
     /**
