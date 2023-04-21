@@ -761,4 +761,44 @@ class TwitterOAuth extends Config
     {
         return is_dir($path) ? CURLOPT_CAPATH : CURLOPT_CAINFO;
     }
+
+    /**
+     *
+     * Make specific DM image requests. This is based on previous versions of TwitterOAuth
+     *
+     * @param string $url
+     * @param string $method
+     * @param array  $parameters
+     * @param bool   $json
+     *
+     * @return array|object
+     */
+    private function makeDmImageRequest(
+        string $url,
+        string $method,
+        array $parameters,
+        bool $json
+    ) {
+        do {
+            $this->sleepIfNeeded();
+            $result = $this->oAuthRequest($url, $method, $parameters, $json);
+            $this->attempts++;
+            // Retry up to our $maxRetries number if we get errors greater than 500 (over capacity etc)
+        } while ($this->requestsAvailable());
+
+        return $result;
+    }
+
+    /**
+     * Get the image from a DM request
+     *
+     * @param string $url The protected url of the image
+     * @param array  $parameters request params
+     *
+     * @return string
+     */
+    public function getImage(string $url, array $parameters = [])
+    {
+        return $this->makeDmImageRequest($url, 'GET', $parameters, false);
+    }
 }
